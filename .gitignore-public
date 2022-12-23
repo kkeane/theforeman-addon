@@ -1,0 +1,9 @@
+# Ignore everything
+*
+# Don't ignore a few files
+!.gitignore-public
+# Don't ignore directories, so we can recurse into them
+# Don't ignore the files we really want in the repo
+!library/
+!library/host_hostcollections.py
+
