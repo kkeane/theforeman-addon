@@ -35,7 +35,7 @@ from ansible.module_utils.basic import AnsibleModule, env_fallback
 
 DOCUMENTATION = r'''
 ---
-module: host_hostcollection
+module: host_hostcollections
 
 short_description: Manages the association of hosts and host_collections
 
@@ -98,7 +98,7 @@ author:
 EXAMPLES = r'''
 # Add a host group
 - name: Add a hostgroup
-  host_hostcollection:
+  host_hostcollections:
     host: myhost.example.com
     host_collections:
       - samplecollection1
@@ -106,17 +106,26 @@ EXAMPLES = r'''
 '''
 
 RETURN = r'''
-# These are examples of possible return values, and in general should use other names for return values.
-original_message:
-    description: The original name param that was passed in.
+original_hostcollections:
+    description: Comma-separated string with the names of all preexisting host collections
     type: str
     returned: always
-    sample: 'hello world'
-message:
-    description: The output message that the test module generates.
+    sample: 'Collection 1,Collection 2'
+new_hostcollections:
+    description: Comma-separated string with the names of all host collections after this module ran
     type: str
     returned: always
-    sample: 'goodbye'
+    sample: 'Collection 2,Collection 3'
+added:
+    description: Comma-separated string with the names of all host collections added
+    type: str
+    returned: always
+    sample: 'Collection 3'
+removed:
+    description: Comma-separated string with the names of all host collections that have been removed
+    type: str
+    returned: always
+    sample: 'Collection 1'
 '''
 
 class ApiAccess:
