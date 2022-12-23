@@ -6,4 +6,5 @@
 # Don't ignore the files we really want in the repo
 !library/
 !library/host_hostcollections.py
-
+!LICENSE.GPL
+!README.GPL.md
