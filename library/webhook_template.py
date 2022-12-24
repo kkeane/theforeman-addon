@@ -59,10 +59,10 @@ options:
         Choices:
             - present (add the given host collections)
             - absent  (remove the given host collections)
-    organization:
-        description: Name of the organization that this template belongs to
+    organizations:
+        description: Name of the organizations that this template belongs to
         required: true
-        type: str
+        type: list. Element Type: str
     locations:
         description: Name of the locations that this template is valid for.
         required: true when state == "present"
@@ -120,7 +120,8 @@ EXAMPLES = r'''
   web_template:
     name: My new template
     description: This is an example template
-    organization: Default Organization
+    organizations:
+      - Default Organization
     locations:
       - Anywhere
     snippet: False
@@ -236,19 +237,18 @@ def location_list_to_ids(input_json):
         output_set.add(loc['id'])
     return output_set
 
-def organization_name_to_id(input_str, all_organizations):
+def organization_list_to_ids(input_str, all_organizations):
     """
     Retrieve the ID for an organization with the given name
-    Return value will be None if the organization does not
-    exist.
     """
 
+    output_set = set()
     for org in all_organizations:
         if org['name']==input_str:
-            return org['id']
-    return None
+            output_set.add(org['id'])
+    return output_set
 
-def organization_id_to_name(input_id, all_organizations):
+def organization_ids_to_names(input_id, all_organizations):
     """
     Retrieve the ID for an organization with the given name
     Return value will be None if the organization does not
@@ -269,7 +269,7 @@ def run_module():
     module_args = dict(
         name=dict(type='str', required=True),
         description=dict(type='str', required=False),
-        organization=dict(type='str', required=True),
+        organizations=dict(type='list', required=True),
         locations=dict(type='list', required=True),
         snippet=dict(type='bool', default=False),
         default=dict(type='bool', default=False),
@@ -313,7 +313,7 @@ def run_module():
 
     name=module.params['name']
     description=module.params['description']
-    organization_name=module.params['organization']
+    organization_names=module.params['organizations']
     locations=module.params['locations']
     snippet=module.params['snippet']
     isdefault=module.params['default']
@@ -344,18 +344,19 @@ def run_module():
     all_organizations, statuscode = session.get("/api/v2/organizations")
     if statuscode != 200:
         module.fail_json(f"Server {server_url} returned {statuscode} for organizations")
-    desired_organization_id = organization_name_to_id(organization_name, all_organizations['results'])
+    desired_organization_ids = \
+        organization_list_to_ids(organization_names, all_organizations['results'])
     desired_location_ids = location_names_to_ids(locations, all_locations['results'])
 
     # List of all the changes to perform.
     # Provided in the JSON format we need to submit to the server
     updates_webhook_template={}
 
+    change_needed = False
     if webhook_template_id is None:
         if state == "present":
             change_needed = True
             # create list of changes to perform
-            updates_webhook_template['organization_id']=desired_organization_id
             template_update={}
             template_update['name']=name
             template_update['locations']=list(desired_location_ids)
@@ -367,9 +368,9 @@ def run_module():
             template_update['default']=isdefault
             template_update['locked']=False
             template_update['default']=False
+            template_update['organization_ids']=desired_organization_ids
             template_update['audit_comment'] = "Created by Ansible module webhook_template"
 
-        # We do not allow updating the organization ids field.
         updates_webhook_template['webhook_template']=template_update
 
     else:
@@ -382,11 +383,7 @@ def run_module():
             if statuscode != 200:
                 module.fail_json(f"Server {server_url} returned {statuscode} for webhook template")
 
-            organizationid = current_webhook_template['results'][0]['organization_id']
-            if organizationid != desired_organization_id:
-                otherorgname=organization_id_to_name(organizationid, all_organizations)
-                module.fail_json(f"Existing template {name} belongs to '{otherorgname}'")
-            locationids = location_list_to_ids(current_webhook_template['results'][0]['locations'])
+            locationids = location_list_to_ids(current_webhook_template['locations'])
 
             # TODO: compare all the desired fields with the existing ones
             template_update={}
@@ -394,14 +391,14 @@ def run_module():
                 # add to list of changes to make
                 template_update['locations']=list(desired_location_ids)
             if not description is None:
-                if description != current_webhook_template['results'][0]['description']:
+                if description != current_webhook_template['description']:
                     template_update['description']=description
             if not template is None:
-                if template != current_webhook_template['results'][0]['template']:
+                if template != current_webhook_template['template']:
                     template_update['template']=template
-            if snippet != current_webhook_template['results'][0]['snippet']:
+            if snippet != current_webhook_template['snippet']:
                 template_update['snippet']=snippet
-            if isdefault != current_webhook_template['results'][0]['default']:
+            if isdefault != current_webhook_template['default']:
                 template_update['default']=isdefault
 
             if len(template_update) > 0:
