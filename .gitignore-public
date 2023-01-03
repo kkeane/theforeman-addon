@@ -7,5 +7,6 @@
 !library/
 !library/host_hostcollections.py
 !library/webhook_template.py
+!library/webhook.py
 !LICENSE.GPL
 !README.GPL.md
