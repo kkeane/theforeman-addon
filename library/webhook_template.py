@@ -115,8 +115,8 @@ author:
 '''
 
 EXAMPLES = r'''
-# Add a host group
-- name: Add a web template
+# Add a webhook template
+- name: Add a webhook template
   web_template:
     name: My new template
     description: This is an example template
@@ -367,7 +367,6 @@ def run_module():
             template_update['snippet']=snippet
             template_update['default']=isdefault
             template_update['locked']=False
-            template_update['default']=False
             template_update['organization_ids']=desired_organization_ids
             template_update['audit_comment'] = "Created by Ansible module webhook_template"
 
@@ -385,7 +384,7 @@ def run_module():
 
             locationids = location_list_to_ids(current_webhook_template['locations'])
 
-            # TODO: compare all the desired fields with the existing ones
+            # compare all the desired fields with the existing ones
             template_update={}
             if locationids.symmetric_difference(desired_location_ids):
                 # add to list of changes to make
