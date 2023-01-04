@@ -347,8 +347,8 @@ def run_module():
     # for consumption, for example, in a subsequent task
     result = dict(
         changed=False,
-        original_webhook_template='',
-        updates=''
+        original_webhook=[],
+        updates=[],
     )
 
     # the AnsibleModule object will be our abstraction working with Ansible
@@ -396,27 +396,38 @@ def run_module():
     # Provided in the JSON format we need to submit to the server
     updates_webhook={}
 
+    webhook_templates, statuscode = \
+        session.get("/api/v2/webhook_templates")
+    if statuscode != 200:
+        module.fail_json(f"Server {server_url} returned {statuscode} for webhook templates")
+
     change_needed = False
     if webhook_id is None:
         if state == "present":
             change_needed = True
             # create list of changes to perform
-            template_update={}
-            template_update['name']=name
-            template_update['target_url']=webhook_target_url
-            template_update['http_method']=webhook_http_method
-            template_update['http_content_type']=webhook_http_content_type
-            template_update['event']=webhook_event
-            template_update['template']=webhook_template
-            template_update['enabled']=webhook_enabled
-            template_update['verify_ssl']=webhook_verify_ssl
-            template_update['ssl_ca_certs']=webhook_ssl_ca_certs
-            template_update['user']=webhook_user
-            template_update['password']=webhook_password
-            template_update['http_headers']=webhook_http_headers
-            template_update['proxy_authorization']=webhook_proxy_authorization
+            webhook_update={}
+            webhook_update['name']=name
+            webhook_update['target_url']=webhook_target_url
+            webhook_update['http_method']=webhook_http_method
+            webhook_update['http_content_type']=webhook_http_content_type
+            webhook_update['event']=webhook_event
+            wh_found = False
+            for wh_template in webhook_templates['results']:
+                if wh_template['name'] == webhook_template:
+                    wh_found = True
+                    webhook_update['webhook_template_id'] = wh_template['id']
+            if not wh_found:
+                module.fail_json(f"Webhook template {webhook_template} not found")
+            webhook_update['enabled']=webhook_enabled
+            webhook_update['verify_ssl']=webhook_verify_ssl
+            webhook_update['ssl_ca_certs']=webhook_ssl_ca_certs
+            webhook_update['user']=webhook_user
+            webhook_update['password']=webhook_password
+            webhook_update['http_headers']=webhook_http_headers
+            webhook_update['proxy_authorization']=webhook_proxy_authorization
 
-        updates_webhook['webhook']=template_update
+        updates_webhook['webhook']=webhook_update
 
     else:
         if state == "absent":
@@ -427,41 +438,38 @@ def run_module():
                 session.get(f"/api/v2/webhooks/{webhook_id}")
             if statuscode != 200:
                 module.fail_json(f"Server {server_url} returned {statuscode} for webhook")
-            webhook_templates, statuscode = \
-                session.get("/api/v2/webhook_templates")
-            if statuscode != 200:
-                module.fail_json(f"Server {server_url} returned {statuscode} for webhook templates")
 
             # compare all the desired fields with the existing ones
-            template_update={}
-            compare_set_field(template_update, current_webhook, webhook_target_url, 'target_url')
-            compare_set_field(template_update, current_webhook, webhook_http_method, 'http_method')
-            compare_set_field(template_update, current_webhook,
+            webhook_update={}
+            compare_set_field(webhook_update, current_webhook, webhook_target_url, 'target_url')
+            compare_set_field(webhook_update, current_webhook, webhook_http_method, 'http_method')
+            compare_set_field(webhook_update, current_webhook,
                               webhook_http_content_type, 'http_content_type')
-            compare_set_field(template_update, current_webhook, webhook_event, 'event')
+            compare_set_field(webhook_update, current_webhook, webhook_event, 'event')
             # For Webhook templates, we need to look up the id
             if webhook_template is not None:
                 wh_found = False
                 for wh_template in webhook_templates['results']:
                     if wh_template['name'] == webhook_template:
                         wh_found = True
-                        template_update['template_id'] = wh_template['id']
+                        if current_webhook['webhook_template']['id'] != wh_template['id']:
+                            webhook_update['webhook_template_id'] = wh_template['id']
                 if not wh_found:
                     module.fail_json(f"Webhook template {webhook_template} not found")
-            compare_set_field(template_update, current_webhook, webhook_enabled, 'enabled')
-            compare_set_field(template_update, current_webhook, webhook_verify_ssl, 'verify_ssl')
-            compare_set_field(template_update, current_webhook,
+            compare_set_field(webhook_update, current_webhook, webhook_enabled, 'enabled')
+            compare_set_field(webhook_update, current_webhook, webhook_verify_ssl, 'verify_ssl')
+            compare_set_field(webhook_update, current_webhook,
                               webhook_ssl_ca_certs, 'ssl_ca_certs')
-            compare_set_field(template_update, current_webhook, webhook_user, 'user')
-            compare_set_field(template_update, current_webhook, webhook_password, 'password')
-            compare_set_field(template_update, current_webhook,
+            compare_set_field(webhook_update, current_webhook, webhook_user, 'user')
+            compare_set_field(webhook_update, current_webhook, webhook_password, 'password')
+            compare_set_field(webhook_update, current_webhook,
                               webhook_http_headers, 'http_headers')
-            compare_set_field(template_update, current_webhook,
+            compare_set_field(webhook_update, current_webhook,
                               webhook_proxy_authorization, 'proxy_authorization')
 
-            if len(template_update) > 0:
+            if len(webhook_update) > 0:
                 change_needed = True
-                updates_webhook['webhook']=template_update
+                updates_webhook['webhook']=webhook_update
                 updates_webhook['id'] = webhook_id
 
     result['original_webhook']=current_webhook
@@ -489,6 +497,9 @@ def run_module():
 
         if not 200 <= statuscode < 300:
             module.fail_json(msg=f'Update failed. Status {statuscode}, output {output}', **result)
+
+        result['statuscode']=statuscode
+        result['output']=output
 
     logging.debug(json.dumps(result, indent=2, sort_keys=True))
 
