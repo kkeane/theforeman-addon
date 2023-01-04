@@ -29,7 +29,6 @@ from __future__ import (absolute_import, division, print_function)
 
 import json
 import logging
-import varname
 import requests
 
 from ansible.module_utils.basic import AnsibleModule, env_fallback
@@ -289,16 +288,15 @@ def organization_ids_to_names(input_id, all_organizations):
             return org['name']
     return None
 
-def compare_set_field(updates, current, field):
+def compare_set_field(updates, current, field, fieldname):
     """
     Check if the given field is provided, and set it if it is and
     if it is different from the current one
     Works for str, int, bool
     """
 
-    fieldname=varname.argname(field).replace('webhook_','')
     if not field is None:
-        if field != current[fieldname]:
+        if fieldname in current and field != current[fieldname]:
             updates[fieldname]=field
 
 
@@ -324,7 +322,7 @@ def run_module():
         webhook_user=dict(type='str', required=False),
         webhook_password=dict(type='str', no_log=True, required=False),
         webhook_http_headers=dict(type='str', required=False),
-        webhook_proxy_authentication=dict(type='bool', default=False),
+        webhook_proxy_authorization=dict(type='bool', default=False),
         state=dict(type='str',
                    required=False,
                    default='present',
@@ -374,7 +372,7 @@ def run_module():
     webhook_user=module.params['webhook_user']
     webhook_password=module.params['webhook_password']
     webhook_http_headers=module.params['webhook_http_headers']
-    webhook_proxy_authentication=module.params['webhook_proxy_authentication']
+    webhook_proxy_authorization=module.params['webhook_proxy_authorization']
     state=module.params['state']
     server_url=module.params['server_url']
     username=module.params['username']
@@ -416,7 +414,7 @@ def run_module():
             template_update['user']=webhook_user
             template_update['password']=webhook_password
             template_update['http_headers']=webhook_http_headers
-            template_update['proxy_authentication']=webhook_proxy_authentication
+            template_update['proxy_authorization']=webhook_proxy_authorization
 
         updates_webhook['webhook']=template_update
 
@@ -436,10 +434,11 @@ def run_module():
 
             # compare all the desired fields with the existing ones
             template_update={}
-            compare_set_field(template_update, current_webhook, webhook_target_url)
-            compare_set_field(template_update, current_webhook, webhook_http_method)
-            compare_set_field(template_update, current_webhook, webhook_http_content_type)
-            compare_set_field(template_update, current_webhook, webhook_event)
+            compare_set_field(template_update, current_webhook, webhook_target_url, 'target_url')
+            compare_set_field(template_update, current_webhook, webhook_http_method, 'http_method')
+            compare_set_field(template_update, current_webhook,
+                              webhook_http_content_type, 'http_content_type')
+            compare_set_field(template_update, current_webhook, webhook_event, 'event')
             # For Webhook templates, we need to look up the id
             if webhook_template is not None:
                 wh_found = False
@@ -449,13 +448,16 @@ def run_module():
                         template_update['template_id'] = wh_template['id']
                 if not wh_found:
                     module.fail_json(f"Webhook template {webhook_template} not found")
-            compare_set_field(template_update, current_webhook, webhook_enabled)
-            compare_set_field(template_update, current_webhook, webhook_verify_ssl)
-            compare_set_field(template_update, current_webhook, webhook_ssl_ca_certs)
-            compare_set_field(template_update, current_webhook, webhook_user)
-            compare_set_field(template_update, current_webhook, webhook_password)
-            compare_set_field(template_update, current_webhook, webhook_http_headers)
-            compare_set_field(template_update, current_webhook, webhook_proxy_authentication)
+            compare_set_field(template_update, current_webhook, webhook_enabled, 'enabled')
+            compare_set_field(template_update, current_webhook, webhook_verify_ssl, 'verify_ssl')
+            compare_set_field(template_update, current_webhook,
+                              webhook_ssl_ca_certs, 'ssl_ca_certs')
+            compare_set_field(template_update, current_webhook, webhook_user, 'user')
+            compare_set_field(template_update, current_webhook, webhook_password, 'password')
+            compare_set_field(template_update, current_webhook,
+                              webhook_http_headers, 'http_headers')
+            compare_set_field(template_update, current_webhook,
+                              webhook_proxy_authorization, 'proxy_authorization')
 
             if len(template_update) > 0:
                 change_needed = True
