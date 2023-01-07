@@ -170,7 +170,11 @@ class ApiAccess:
         logging.debug("GET %s", location)
         result = self._sat_session.get(self._server_url + location)
         logging.debug(result)
-        logging.debug(json.dumps(result.json(), indent=2, sort_keys=True))
+        try:
+            logging.debug(json.dumps(result.json(), indent=2, sort_keys=True))
+        except TypeError:
+            # This can happen if the data is not json serializable.
+            pass
         return result.json() , result.status_code
 
     def put(self, location: str, args) -> tuple:
@@ -181,7 +185,11 @@ class ApiAccess:
         logging.debug("PUT %s", location)
         result = self._sat_session.put(self._server_url + location, json=args)
         logging.debug(result)
-        logging.debug(json.dumps(result.json(), indent=2, sort_keys=True))
+        try:
+            logging.debug(json.dumps(result.json(), indent=2, sort_keys=True))
+        except TypeError:
+            # This can happen if the data is not json serializable.
+            pass
         return result.json() , result.status_code
 
     def post(self, location: str, args) -> tuple:
@@ -192,7 +200,11 @@ class ApiAccess:
         logging.debug("POST %s", location)
         result = self._sat_session.post(self._server_url + location, json=args)
         logging.debug(result)
-        logging.debug(json.dumps(result.json(), indent=2, sort_keys=True))
+        try:
+            logging.debug(json.dumps(result.json(), indent=2, sort_keys=True))
+        except TypeError:
+            # This can happen if the data is not json serializable.
+            pass
         return result.json() , result.status_code
 
     def delete(self, location: str) -> tuple:
@@ -203,7 +215,11 @@ class ApiAccess:
         logging.debug("DELETE %s", location)
         result = self._sat_session.delete(self._server_url + location)
         logging.debug(result)
-        logging.debug(json.dumps(result.json(), indent=2, sort_keys=True))
+        try:
+            logging.debug(json.dumps(result.json(), indent=2, sort_keys=True))
+        except TypeError:
+            # This can happen if the data is not json serializable.
+            pass
         return result.json() , result.status_code
 
 def location_names_to_ids(input_set, all_locations):
@@ -367,7 +383,7 @@ def run_module():
             template_update['snippet']=snippet
             template_update['default']=isdefault
             template_update['locked']=False
-            template_update['organization_ids']=desired_organization_ids
+            template_update['organization_ids']=list(desired_organization_ids)
             template_update['audit_comment'] = "Created by Ansible module webhook_template"
 
         updates_webhook_template['webhook_template']=template_update
