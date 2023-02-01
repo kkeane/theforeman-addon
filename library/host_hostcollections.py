@@ -258,7 +258,7 @@ def run_module():
     current_host_collections = set()
     desired_host_collections = set()
     find_host, statuscode = session.get(f"/api/v2/hosts?search={host}")
-    all_host_collections, statuscode2 = session.get("/katello/api/host_collections")
+    all_host_collections, statuscode2 = session.get("/katello/api/host_collections?per_page=1000000")
     if statuscode != 200:
         module.fail_json(f"Server {server_url} returned {statuscode} for host search")
     if statuscode2 != 200:
