@@ -41,7 +41,7 @@ short_description: Manages the association of hosts and host_collections
 
 # If this is part of a collection, you need to use semantic versioning,
 # i.e. the version is of the form "2.5.0" and not "2.4".
-version_added: "1.0.0"
+version_added: "0.0.1"
 
 description: This module will associate a given host with a list of host_collections.
 
@@ -128,6 +128,7 @@ removed:
     sample: 'Collection 1'
 '''
 
+
 class ApiAccess:
     """
     An object-oriented wrapper around the request
@@ -136,8 +137,8 @@ class ApiAccess:
 
     def __init__(self, server_url, username, password, validate_certs):
 
-        self._sat_session=requests.Session()
-        self._sat_session.verify=validate_certs
+        self._sat_session = requests.Session()
+        self._sat_session.verify = validate_certs
         self._sat_session.auth = (username, password)
         self._server_url = server_url
 
@@ -150,7 +151,7 @@ class ApiAccess:
         result = self._sat_session.get(self._server_url + location)
         logging.debug(result)
         logging.debug(json.dumps(result.json(), indent=2, sort_keys=True))
-        return result.json() , result.status_code
+        return result.json(), result.status_code
 
     def put(self, location: str, args) -> tuple:
         """
@@ -161,7 +162,8 @@ class ApiAccess:
         result = self._sat_session.put(self._server_url + location, json=args)
         logging.debug(result)
         logging.debug(json.dumps(result.json(), indent=2, sort_keys=True))
-        return result.json() , result.status_code
+        return result.json(), result.status_code
+
 
 def hostcollection_ids_to_text(host_collection, all_host_collections):
     """
@@ -169,12 +171,13 @@ def hostcollection_ids_to_text(host_collection, all_host_collections):
     a comma-separated list of host collection names.
     Make it sorted so it becomes easier to use for a human.
     """
-    output_array=set()
+    output_array = set()
     for h_c in host_collection:
         for all_h_c in all_host_collections['results']:
             if h_c == all_h_c['id']:
                 output_array.add(all_h_c['name'])
     return ','.join(sorted(output_array))
+
 
 def host_collection_names_to_ids(input_set, all_hcs):
     """
@@ -197,6 +200,7 @@ def host_collection_names_to_ids(input_set, all_hcs):
             output_set.add(h_c['id'])
     return output_set
 
+
 def run_module():
     """
     Run the module
@@ -209,10 +213,9 @@ def run_module():
         state=dict(type='str',
                    required=False,
                    default='present',
-                   choices=['present','absent','override']),
+                   choices=['present', 'absent', 'override']),
         server_url=dict(required=True,
-                        fallback=(env_fallback,
-                        ['FOREMAN_SERVER_URL', 'FOREMAN_SERVER', 'FOREMAN_URL'])),
+                        fallback=(env_fallback, ['FOREMAN_SERVER_URL', 'FOREMAN_SERVER', 'FOREMAN_URL'])),
         username=dict(required=True,
                       fallback=(env_fallback, ['FOREMAN_USERNAME', 'FOREMAN_USER'])),
         password=dict(required=True,
@@ -245,13 +248,13 @@ def run_module():
         supports_check_mode=True
     )
 
-    host=module.params['host']
-    host_collections=module.params['host_collections']
-    state=module.params['state']
-    server_url=module.params['server_url']
-    username=module.params['username']
-    password=module.params['password']
-    validate_certs=module.params['validate_certs']
+    host = module.params['host']
+    host_collections = module.params['host_collections']
+    state = module.params['state']
+    server_url = module.params['server_url']
+    username = module.params['username']
+    password = module.params['password']
+    validate_certs = module.params['validate_certs']
 
     session = ApiAccess(server_url, username, password, validate_certs)
 
@@ -284,7 +287,7 @@ def run_module():
         host_collection_names_to_ids(host_collections, all_host_collections['results'])
 
     # compare current host collection with desired one
-    new_host_collections=set()
+    new_host_collections = set()
     if state == 'override':
         new_host_collections = desired_host_collections
     elif state == 'present':
@@ -295,15 +298,15 @@ def run_module():
     to_add = new_host_collections.difference(current_host_collections)
     to_remove = current_host_collections.difference(new_host_collections)
 
-    result['original_host_collections']=hostcollection_ids_to_text(
+    result['original_host_collections'] = hostcollection_ids_to_text(
         current_host_collections, all_host_collections)
-    result['new_host_collections']=hostcollection_ids_to_text(
+    result['new_host_collections'] = hostcollection_ids_to_text(
         new_host_collections, all_host_collections)
-    result['added']=hostcollection_ids_to_text(to_add, all_host_collections)
-    result['removed']=hostcollection_ids_to_text(to_remove, all_host_collections)
+    result['added'] = hostcollection_ids_to_text(to_add, all_host_collections)
+    result['removed'] = hostcollection_ids_to_text(to_remove, all_host_collections)
 
     change_needed = False
-    if len(to_add)>0 or len(to_remove) > 0:
+    if len(to_add) > 0 or len(to_remove) > 0:
         change_needed = True
 
     result['changed'] = change_needed

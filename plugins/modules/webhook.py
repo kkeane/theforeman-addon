@@ -177,6 +177,7 @@ message:
     sample: 'goodbye'
 '''
 
+
 class ApiAccess:
     """
     An object-oriented wrapper around the request
@@ -185,8 +186,8 @@ class ApiAccess:
 
     def __init__(self, server_url, username, password, validate_certs):
 
-        self._sat_session=requests.Session()
-        self._sat_session.verify=validate_certs
+        self._sat_session = requests.Session()
+        self._sat_session.verify = validate_certs
         self._sat_session.auth = (username, password)
         self._server_url = server_url
 
@@ -199,7 +200,7 @@ class ApiAccess:
         result = self._sat_session.get(self._server_url + location)
         logging.debug(result)
         logging.debug(json.dumps(result.json(), indent=2, sort_keys=True))
-        return result.json() , result.status_code
+        return result.json(), result.status_code
 
     def put(self, location: str, args) -> tuple:
         """
@@ -210,7 +211,7 @@ class ApiAccess:
         result = self._sat_session.put(self._server_url + location, json=args)
         logging.debug(result)
         logging.debug(json.dumps(result.json(), indent=2, sort_keys=True))
-        return result.json() , result.status_code
+        return result.json(), result.status_code
 
     def post(self, location: str, args) -> tuple:
         """
@@ -221,7 +222,7 @@ class ApiAccess:
         result = self._sat_session.post(self._server_url + location, json=args)
         logging.debug(result)
         logging.debug(json.dumps(result.json(), indent=2, sort_keys=True))
-        return result.json() , result.status_code
+        return result.json(), result.status_code
 
     def delete(self, location: str) -> tuple:
         """
@@ -232,7 +233,8 @@ class ApiAccess:
         result = self._sat_session.delete(self._server_url + location)
         logging.debug(result)
         logging.debug(json.dumps(result.json(), indent=2, sort_keys=True))
-        return result.json() , result.status_code
+        return result.json(), result.status_code
+
 
 def location_names_to_ids(input_set, all_locations):
     """
@@ -255,6 +257,7 @@ def location_names_to_ids(input_set, all_locations):
             output_set.add(loc['id'])
     return output_set
 
+
 def location_list_to_ids(input_json):
     """
     Convert the list of locations as provided by the API
@@ -265,6 +268,7 @@ def location_list_to_ids(input_json):
         output_set.add(loc['id'])
     return output_set
 
+
 def organization_list_to_ids(input_str, all_organizations):
     """
     Retrieve the ID for an organization with the given name
@@ -272,9 +276,10 @@ def organization_list_to_ids(input_str, all_organizations):
 
     output_set = set()
     for org in all_organizations:
-        if org['name']==input_str:
+        if org['name'] == input_str:
             output_set.add(org['id'])
     return output_set
+
 
 def organization_ids_to_names(input_id, all_organizations):
     """
@@ -284,9 +289,10 @@ def organization_ids_to_names(input_id, all_organizations):
     """
 
     for org in all_organizations:
-        if org['id']==input_id:
+        if org['id'] == input_id:
             return org['name']
     return None
+
 
 def compare_set_field(updates, current, field, fieldname):
     """
@@ -297,7 +303,7 @@ def compare_set_field(updates, current, field, fieldname):
 
     if not field is None:
         if fieldname in current and field != current[fieldname]:
-            updates[fieldname]=field
+            updates[fieldname] = field
 
 
 def run_module():
@@ -312,7 +318,7 @@ def run_module():
         webhook_target_url=dict(type='str', required=True),
         webhook_http_method=dict(type='str',
                                  required=True,
-                                 choices=['POST','GET','PUT','DELETE','PATCH']),
+                                 choices=['POST', 'GET', 'PUT', 'DELETE', 'PATCH']),
         webhook_http_content_type=dict(type='str', default='application/json'),
         webhook_event=dict(type='str', required=True),
         webhook_template=dict(type='str', required=True),
@@ -326,7 +332,7 @@ def run_module():
         state=dict(type='str',
                    required=False,
                    default='present',
-                   choices=['present','absent']),
+                   choices=['present', 'absent']),
         server_url=dict(required=True,
                         fallback=(env_fallback,
                         ['FOREMAN_SERVER_URL', 'FOREMAN_SERVER', 'FOREMAN_URL'])),
