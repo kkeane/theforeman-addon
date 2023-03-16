@@ -39,3 +39,6 @@ repository: https://github.com/kkeane/theforeman-addon
 
 # The URL to the collection issue tracker
 issues: https://github.com/kkeane/theforeman-addon/issues
+
+build_ignore:
+  - library

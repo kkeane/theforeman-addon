@@ -1,0 +1,1 @@
+../plugins/modules/host_hostcollections.py
