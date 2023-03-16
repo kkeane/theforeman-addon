@@ -176,7 +176,7 @@ def hostcollection_ids_to_text(host_collection, all_host_collections):
                 output_array.add(all_h_c['name'])
     return ','.join(sorted(output_array))
 
-def host_collection_names_to_ids(input_set, all_hcs):
+def host_collection_names_to_ids(input_set, all_hcs, organization):
     """
     Returns a set of IDs that match the host_collection names in the
     input set
@@ -194,7 +194,8 @@ def host_collection_names_to_ids(input_set, all_hcs):
     output_set = set()
     for h_c in all_hcs:
         if h_c['name'] in input_set:
-            output_set.add(h_c['id'])
+            if h_c['organization_id'] == organization:
+                output_set.add(h_c['id'])
     return output_set
 
 def run_module():
@@ -281,7 +282,7 @@ def run_module():
         current_host_collections.add(c_h_c['id'])
 
     desired_host_collections = \
-        host_collection_names_to_ids(host_collections, all_host_collections['results'])
+        host_collection_names_to_ids(host_collections, all_host_collections['results'], organizationid)
 
     # compare current host collection with desired one
     new_host_collections=set()
